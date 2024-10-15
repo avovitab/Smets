@@ -12,7 +12,7 @@ import misc as mi
 
 epsilon = 1e-6
 
-class Godunov1():
+class MUSCL():
 
     def __init__(self, testCase, form='vanilla'):
         self.form = form

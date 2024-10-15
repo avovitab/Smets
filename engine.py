@@ -14,7 +14,7 @@ epsilon = 1e-6
 
 class MUSCL():
 
-    def __init__(self, testCase, form='vanilla'):
+    def __init__(self, testCase, form='KT'):
         self.form = form
         self.dx = testCase.dx
         self.dt = testCase.dt

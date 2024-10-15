@@ -29,8 +29,7 @@ class MUSCL():
         self.uFinal = testCase.uFinal
 
     def phiSuperbee(self, r):
-        
-        return np.max(0, np.min(2*r-1), np.min(r,2))
+        return np.max((0, np.min(2*r-1), np.min(r,2)))
 
     def fillFlux0_KT(self, w, f, a):
         N = w.shape[0]

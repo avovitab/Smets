@@ -10,16 +10,16 @@
 import numpy as np
 import misc as mi
 
-epsilon = 1e-6
+epsilon = 1e-6 #global variable for convergence
 
 class Godunov1():
 
-    def __init__(self, testCase, form='vanilla'):
+    def __init__(self, testCase, form='KT'):
         self.form = form
         self.dx = testCase.dx
         self.dt = testCase.dt
         self.tFinal = testCase.tFinal
-        self.nu = testCase.nu
+        self.nu = testCase.nu #not used
         self.u0 = testCase.u0
         self.flux = testCase.flux
         self.u_star = testCase.u_star
@@ -28,17 +28,19 @@ class Godunov1():
         self.uFinal = testCase.uFinal
 
 
-    def fillFlux0_viscosity(self, w, f, a):
+    def fillFlux0_KT(self, w, f, a):
         N = w.shape[0]
 
-        a_ = np.empty(N)
+        a_ = np.empty(N) # a_{i+{\frac {1}{2}}}\left(t\right)=\max \left[\rho \left({\frac {\partial F\left(u_{i+1/2}^{L}\left(t\right)\right)}{\partial u}}\right),\rho \left({\frac {\partial F\left(u_{i+1/2}^{R}\left(t\right)\right)}{\partial u}}\right),\right]
         diff_ = np.empty(N)
         for j in range(1, N-1):
             if (np.fabs(w[j]-w[j-1]) < epsilon):
                 a_[j] = a(w[j])
                 diff_[j] = 0
             else:
-                a_[j] = (f(w[j])-f(w[j-1]))/(w[j]-w[j-1])
+                #Computing the maximum eigenvalue of the jacobian of the flux function
+                jacf = 
+                a_[j] = 
                 diff_[j] = (f(w[j])-2*f(0.)+f(w[j-1]))/(w[j]-w[j-1])
 
         e_ = np.empty(N)
@@ -53,11 +55,11 @@ class Godunov1():
         flux = np.empty(N)
         flux[1:-1] = 0.5 *             (f(w[1:-1])+f(w[0:-2]))\
                    - 0.5 * e_[1: -1] * (  w[1:-1] -  w[0:-2])
-        flux = mi.fillGhosts(flux)
+        flux = mi.fillGhosts(flux)  
         return flux
 
 
-    def fillFlux1_viscosity(self, w, f, a):
+    def fillFlux1_KT(self, w, f, a):
         N = w.shape[0]
 
         a_ = np.empty(N)
@@ -86,55 +88,17 @@ class Godunov1():
         return flux
 
 
-    def fillFlux0_vanilla(self, w, f, a):
-        N = w.shape[0]
-        flux = np.empty(N)
-        for j in range(1, N-1):
-            if w[j-1] < w[j]:
-                if w[j-1] * w[j] > 0:
-                    flux[j] = np.min([f(w[j-1]), f(w[j])])
-                else:
-                    flux[j] = np.min([f(w[j-1]), f(w[j]), 0.])
-            else:
-                if w[j-1] * w[j] > 0:
-                    flux[j] = np.max([f(w[j-1]), f(w[j])])
-                else:
-                    flux[j] = np.max([f(w[j-1]), f(w[j]), 0.])
-        flux = mi.fillGhosts(flux)
-        return flux
-
-
-    def fillFlux1_vanilla(self, w, f, a):
-        N = w.shape[0]
-        flux = np.empty(N)
-        for j in range(1, N-1):
-            if w[j] < w[j+1]:
-                if w[j] * w[j+1] > 0:
-                    flux[j] = np.min([f(w[j]), f(w[j+1])])
-                else:
-                    flux[j] = np.min([f(w[j]), f(w[j+1]), 0.])
-            else:
-                if w[j] * w[j+1] > 0:
-                    flux[j] = np.max([f(w[j]), f(w[j+1])])
-                else:
-                    flux[j] = np.max([f(w[j]), f(w[j+1]), 0.])
-        flux = mi.fillGhosts(flux)
-        return flux
-
-
     def fillFlux0(self, w, f, a):
-        if self.form == 'vanilla':
-            return self.fillFlux0_vanilla(w, f, a)
-        if self.form == 'viscosity':
-            return self.fillFlux0_viscosity(w, f, a)
+        if self.form == 'KT':
+            return self.fillFlux0_KT(w, f, a)
 
 
     def fillFlux1(self, w, f, a):
-        if self.form == 'vanilla':
-            return self.fillFlux1_vanilla(w, f, a)
-        if self.form == 'viscosity':
-            return self.fillFlux1_viscosity(w, f, a)
+        if self.form == 'KT':
+            return self.fillFlux1_KT(w, f, a)
 
+    def phiSuperbee(self, r):
+        return np.max([0, np.min([1, 2*r]), np.min([2, r])])
 
     def compute(self, tFinal):
         Nt = int(tFinal/self.dt)
@@ -157,7 +121,7 @@ class Godunov1():
 
             F1w = mi.fillGhosts(F1w)
 
-            u1w[1:-1] = u0w[1:-1] - self.nu * (F1w[1:-1] - F0w[1:-1])
+            u1w[1:-1] = u0w[1:-1] - 1/self.dx * (F1w[1:-1] - F0w[1:-1])
 
             u1w = mi.fillGhosts(u1w)
 

@@ -24,116 +24,56 @@ class Godunov1():
         self.flux = testCase.flux
         self.u_star = testCase.u_star
         self.a = testCase.a
+        self.jac = self.a
         self.x = testCase.x
         self.uFinal = testCase.uFinal
 
+    def phiSuperbee(self, r):
+        
+        return np.max(0, np.min(2*r-1), np.min(r,2))
 
-    def fillFlux0_viscosity(self, w, f, a):
-        N = w.shape[0]
-
-        a_ = np.empty(N)
-        diff_ = np.empty(N)
-        for j in range(1, N-1):
-            if (np.fabs(w[j]-w[j-1]) < epsilon):
-                a_[j] = a(w[j])
-                diff_[j] = 0
-            else:
-                a_[j] = (f(w[j])-f(w[j-1]))/(w[j]-w[j-1])
-                diff_[j] = (f(w[j])-2*f(0.)+f(w[j-1]))/(w[j]-w[j-1])
-
-        e_ = np.empty(N)
-        for j in range(1, N-1):
-            if ((w[j-1] * w[j] > 0) & (np.fabs(w[j]-w[j-1]) > epsilon)):
-                e0_ = (f(w[j])-f(w[j-1])) / (w[j]-w[j-1])
-                e1_ = (f(w[j-1])-f(w[j])) / (w[j]-w[j-1])
-                e_[j] = np.max([e0_, e1_])
-            else:
-                e_[j] = np.max([np.fabs(a_[j]), diff_[j]])
-
-        flux = np.empty(N)
-        flux[1:-1] = 0.5 *             (f(w[1:-1])+f(w[0:-2]))\
-                   - 0.5 * e_[1: -1] * (  w[1:-1] -  w[0:-2])
-        flux = mi.fillGhosts(flux)
-        return flux
-
-
-    def fillFlux1_viscosity(self, w, f, a):
-        N = w.shape[0]
-
-        a_ = np.empty(N)
-        diff_ = np.empty(N)
-        for j in range(1, N-1):
-            if (np.fabs(w[j+1]-w[j]) < epsilon):
-                a_[j] = a(w[j])
-                diff_[j] = 0
-            else:
-                a_[j] = (f(w[j+1])-f(w[j]))/(w[j+1]-w[j])
-                diff_[j] = (f(w[j+1])-2*f(0.)+f(w[j]))/(w[j+1]-w[j])
-
-        e_ = np.empty(N)
-        for j in range(1, N-1):
-            if ((w[j] * w[j+1] > 0) & (np.fabs(w[j]-w[j+1]) > epsilon)):
-                e0_ = (f(w[j+1])-f(w[j])) / (w[j+1]-w[j])
-                e1_ = (f(w[j])-f(w[j+1])) / (w[j+1]-w[j])
-                e_[j] = np.max([e0_, e1_])
-            else:
-                e_[j] = np.max([np.fabs(a_[j]), diff_[j]])
-
-        flux = np.empty(N)
-        flux[1:-1] = 0.5 *             (f(w[2:])+f(w[1:-1]))\
-                   - 0.5 * e_[1: -1] * (  w[2:] -  w[1:-1])
-        flux = mi.fillGhosts(flux)
-        return flux
-
-
-    def fillFlux0_vanilla(self, w, f, a):
+    def fillFlux0_KT(self, w, f, a):
         N = w.shape[0]
         flux = np.empty(N)
+
         for j in range(1, N-1):
-            if w[j-1] < w[j]:
-                if w[j-1] * w[j] > 0:
-                    flux[j] = np.min([f(w[j-1]), f(w[j])])
-                else:
-                    flux[j] = np.min([f(w[j-1]), f(w[j]), 0.])
-            else:
-                if w[j-1] * w[j] > 0:
-                    flux[j] = np.max([f(w[j-1]), f(w[j])])
-                else:
-                    flux[j] = np.max([f(w[j-1]), f(w[j]), 0.])
+            riMinus = (w[j] - w[j-1])/(w[j+1] - w[j])
+            riPlus  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
+            uL = w[j] + .5 * self.phiSuperbee(riMinus) * (w[j] - w[j-1])
+            uR = w[j] - .5 * self.phiSuperbee(riPlus) * (w[j+1] - w[j])
+
+            rho = max(self.jac(uR),self.jac(uL))
+
+            flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
+
         flux = mi.fillGhosts(flux)
         return flux
-
-
-    def fillFlux1_vanilla(self, w, f, a):
+    
+    def fillFlux1_KT(self, w, f, a):
         N = w.shape[0]
         flux = np.empty(N)
+
         for j in range(1, N-1):
-            if w[j] < w[j+1]:
-                if w[j] * w[j+1] > 0:
-                    flux[j] = np.min([f(w[j]), f(w[j+1])])
-                else:
-                    flux[j] = np.min([f(w[j]), f(w[j+1]), 0.])
-            else:
-                if w[j] * w[j+1] > 0:
-                    flux[j] = np.max([f(w[j]), f(w[j+1])])
-                else:
-                    flux[j] = np.max([f(w[j]), f(w[j+1]), 0.])
+            riMinus = (w[j+1] - w[j])/(w[j+2] - w[j+1])
+            riPlus  = (w[j+2] - w[j+1])/(w[j+3] - w[j+2])
+            uL = w[j] + .5 * self.phiSuperbee(riMinus) * (w[j+1] - w[j])
+            uR = w[j] - .5 * self.phiSuperbee(riPlus) * (w[j+2] - w[j+1])
+
+            rho = max(self.jac(uR),self.jac(uL))
+
+            flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
+
         flux = mi.fillGhosts(flux)
         return flux
-
 
     def fillFlux0(self, w, f, a):
-        if self.form == 'vanilla':
-            return self.fillFlux0_vanilla(w, f, a)
-        if self.form == 'viscosity':
-            return self.fillFlux0_viscosity(w, f, a)
+        if self.form == 'KT':
+            return self.fillFlux0_KT(w, f, a)
 
 
     def fillFlux1(self, w, f, a):
-        if self.form == 'vanilla':
-            return self.fillFlux1_vanilla(w, f, a)
-        if self.form == 'viscosity':
-            return self.fillFlux1_viscosity(w, f, a)
+        if self.form == 'KT':
+            return self.fillFlux1_KT(w, f, a)
 
 
     def compute(self, tFinal):

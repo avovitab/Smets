@@ -1,16 +1,10 @@
-# -*- coding: utf-8 -*-
-
-
-
-# Godunov first order upwind scheme
-# ============================================
-
-
-
 import numpy as np
 import misc as mi
 
 epsilon = 1e-6
+
+def phiSuperbee(r):
+        return max(0, min(2*r,1), min(r,2))
 
 class MUSCL():
 
@@ -28,19 +22,15 @@ class MUSCL():
         self.x = testCase.x
         self.uFinal = testCase.uFinal
 
-    def phiSuperbee(self, r):
-        print(r)
-        return np.max([0, np.min([2*r,1]), np.min([r,2])])
-
     def fillFlux0_KT(self, w, f, a):
         N = w.shape[0]
         flux = np.empty(N)
 
-        for j in range(2, N-2):
+        for j in range(3, N-3):
             riMinus = (w[j] - w[j-1])/(w[j+1] - w[j])
             riPlus  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
-            uL = w[j] + .5 * self.phiSuperbee(riMinus) * (w[j] - w[j-1])
-            uR = w[j] - .5 * self.phiSuperbee(riPlus) * (w[j+1] - w[j])
+            uL = w[j] + .5 * phiSuperbee(riMinus) * (w[j] - w[j-1])
+            uR = w[j] - .5 * phiSuperbee(riPlus ) * (w[j+1] - w[j])
 
             rho = max(self.jac(uR),self.jac(uL))
 
@@ -53,11 +43,11 @@ class MUSCL():
         N = w.shape[0]
         flux = np.empty(N)
 
-        for j in range(2, N-2):
+        for j in range(3, N-3):
             riMinus = (w[j+1] - w[j])/(w[j+2] - w[j+1])
             riPlus  = (w[j+2] - w[j+1])/(w[j+3] - w[j+2])
-            uL = w[j] + .5 * self.phiSuperbee(riMinus) * (w[j+1] - w[j])
-            uR = w[j] - .5 * self.phiSuperbee(riPlus) * (w[j+2] - w[j+1])
+            uL = w[j] + .5 * phiSuperbee(riMinus) * (w[j+1] - w[j])
+            uR = w[j] - .5 * phiSuperbee(riPlus ) * (w[j+2] - w[j+1])
 
             rho = max(self.jac(uR),self.jac(uL))
 
@@ -80,10 +70,10 @@ class MUSCL():
         Nt = int(tFinal/self.dt)
         dx = self.dx
 
-        u0w = mi.addGhosts(self.u0(self.x),num_of_ghosts=2)
-        u0w = mi.fillGhosts(u0w,num_of_ghosts=2)
+        u0w = mi.addGhosts(self.u0(self.x),num_of_ghosts=3)
+        u0w = mi.fillGhosts(u0w,num_of_ghosts=3)
 
-        xw = mi.addGhosts(self.x,num_of_ghosts=2)
+        xw = mi.addGhosts(self.x,num_of_ghosts=3)
         xw[0] = xw[1]-dx
         xw[-1] = xw[-2]+dx
 
@@ -95,11 +85,11 @@ class MUSCL():
             F0w = self.fillFlux0(u0w, self.flux, self.a)
             F1w = self.fillFlux1(u0w, self.flux, self.a)
 
-            F1w = mi.fillGhosts(F1w,num_of_ghosts=2)
+            F1w = mi.fillGhosts(F1w,num_of_ghosts=3)
 
             u1w[1:-1] = u0w[1:-1] - self.nu * (F1w[1:-1] - F0w[1:-1])
 
-            u1w = mi.fillGhosts(u1w,num_of_ghosts=2)
+            u1w = mi.fillGhosts(u1w,num_of_ghosts=3)
 
             u0w = u1w
 

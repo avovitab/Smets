@@ -4,7 +4,7 @@ import misc as mi
 epsilon = 1e-6
 
 def phiSuperbee(r):
-        return max(0, min(2*r,1), min(r,2))
+        return max(0., min(2.*r,1.), min(r,2.))
 
 class MUSCL():
 
@@ -36,11 +36,10 @@ class MUSCL():
             else:
                 riR = (w[j] - w[j-1])/(w[j+1] - w[j])
 
-
-            uL = w[j] + .5 * phiSuperbee(riL) * (w[j] - w[j-1])
+            uL = w[j-1] + .5 * phiSuperbee(riL) * (w[j] - w[j-1])
             uR = w[j] - .5 * phiSuperbee(riR) * (w[j+1] - w[j])
 
-            rho = max(self.jac(uR),self.jac(uL))
+            rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
 
             flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
 
@@ -62,9 +61,9 @@ class MUSCL():
                 riR  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
 
             uL = w[j] + .5 * phiSuperbee(riL) * (w[j+1] - w[j])
-            uR = w[j] - .5 * phiSuperbee(riR) * (w[j+2] - w[j+1])
+            uR = w[j+1] - .5 * phiSuperbee(riR) * (w[j+2] - w[j+1])
 
-            rho = max(self.jac(uR),self.jac(uL))
+            rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
 
             flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
 
@@ -75,7 +74,6 @@ class MUSCL():
         if self.form == 'KT':
             return self.fillFlux0_KT(w, f, a)
 
-
     def fillFlux1(self, w, f, a):
         if self.form == 'KT':
             return self.fillFlux1_KT(w, f, a)
@@ -84,7 +82,7 @@ class MUSCL():
     def compute(self, tFinal):
         Nt = int(tFinal/self.dt)
         dx = self.dx
-
+        
         u0w = mi.addGhosts(self.u0(self.x),num_of_ghosts=2)
         u0w = mi.fillGhosts(u0w,num_of_ghosts=2)
 
@@ -94,8 +92,6 @@ class MUSCL():
         xw[-2] = xw[-3]+dx
         xw[-1] = xw[-2]+dx
         
-        print(xw.shape)
-        print(u0w.shape)
         u1w = np.empty((u0w.shape[0]))
         F0w = np.empty((u0w.shape[0]))
         F1w = np.empty((u0w.shape[0]))
@@ -103,8 +99,6 @@ class MUSCL():
         for _ in range(Nt):
             F0w = self.fillFlux0(u0w, self.flux, self.a)
             F1w = self.fillFlux1(u0w, self.flux, self.a)
-
-            F1w = mi.fillGhosts(F1w,num_of_ghosts=2)
 
             u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2])
 

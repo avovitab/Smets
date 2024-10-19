@@ -117,7 +117,7 @@ class Test3(TestHCL):
 
     def __init__(self):
         super().__init__(tag = 3,\
-                         tFinal = (4,40),\
+                         tFinal = (4,40)[1],\
                          nx = 600,\
                          flux = lambda u:u,\
                          u_star = None,\

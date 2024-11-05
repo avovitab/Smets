@@ -19,6 +19,9 @@ def phiVanLeer(r):
 def phiMinMod(r):
     return max(0,min(1.,r))
 
+def phivanAlbada(r):
+    return 2*r/(1+r**2)
+
 class MUSCL():
 
     def __init__(self, testCase, form='KT'):
@@ -125,7 +128,7 @@ class MUSCL():
 
             k = 1/3
 
-            uL = w[j] + .25 * phi(riL) * ((1-k)*(w[j]-w[j-1]) + (1+k)*(w[j+1] - w[j]))
+            uL = w[j] + .25 * phi(riL) * ((1-k)*(w[j]-w[j-1]) + (1+k)*(w[j+1] - w[j])) #use flux limiter between two methods?
             uR = w[j+1] - .25 * phi(riR) * ((1-k)*(w[j+2]-w[j+1]) + (1+k)*(w[j+1] - w[j]))
 
             rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
@@ -152,8 +155,8 @@ class MUSCL():
             uL = w[j] + 0.5 * phi(riL) * (w[j+1] - w[j])
             uR = w[j+1] - 0.5 * phi(riR) * (w[j+2] - w[j+1])
 
-            fL = f(uL)
-            fR = f(uR)
+            fL = f(w[j]) + 0.5 * self.a(w[j]) * (uL - w[j])
+            fR = f(w[j+1]) - 0.5 * self.a(w[j+1]) * (w[j+1] - uR)
 
             aL = self.jac(uL)
             aR = self.jac(uR)
@@ -161,6 +164,7 @@ class MUSCL():
             a = max(abs(aL), abs(aR))
 
             flux[j] = 0.5 * (fL + fR) - 0.5 * a * (uR - uL)
+            flux[j] += 0.5 * self.nu * (uR - uL)
 
         flux = mi.fillGhosts(flux)
         return flux
@@ -169,7 +173,7 @@ class MUSCL():
         N = w.shape[0]
         damp = np.empty(N)
         for j in range(2,N-2):
-            damp[j] = (w[j-1]-2*w[j]+w[j+1])
+            damp[j] = (w[j-1]-2*w[j]+w[j+1]) # w[j]-w[j-1] no? if taking 2.48 expression
 
         return damp
 

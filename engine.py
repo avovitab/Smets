@@ -76,6 +76,58 @@ class MUSCL():
         flux = mi.fillGhosts(flux)
         return flux
     
+    def fillFlux0_KT_parabolic(self, w, f, phi):
+        N = w.shape[0]
+        flux = np.empty(N)
+
+        for j in range(2, N-2):
+            if (w[j] - w[j-1]) == 0:
+                riL = np.inf
+            else:
+                riL = (w[j-1] - w[j-2])/(w[j] - w[j-1])
+            if (w[j+1] - w[j]) == 0:
+                riR = np.inf
+            else:
+                riR = (w[j] - w[j-1])/(w[j+1] - w[j])
+
+            k = 1/3
+
+            uL = w[j-1] + .25 * phi(riL) * ((1-k)*(w[j-1]-w[j-2]) + (1+k)*(w[j] - w[j-1]))
+            uR = w[j] - .25 * phi(riR) * ((1-k)*(w[j+1]-w[j]) + (1+k)*(w[j] - w[j-1]))
+
+            rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
+
+            flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
+
+        flux = mi.fillGhosts(flux)
+        return flux
+    
+    def fillFlux1_KT_parabolic(self, w, f, phi):
+        N = w.shape[0]
+        flux = np.empty(N)
+
+        for j in range(2, N-2):
+            if (w[j+1] - w[j]) == 0:
+                riL = np.inf
+            else:
+                riL = (w[j] - w[j-1])/(w[j+1] - w[j])
+            if (w[j+2] - w[j+1]) == 0:
+                riR = np.inf
+            else:
+                riR  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
+
+            k = 1/3
+
+            uL = w[j] + .25 * phi(riL) * ((1-k)*(w[j]-w[j-1]) + (1+k)*(w[j+1] - w[j]))
+            uR = w[j+1] - .25 * phi(riR) * ((1-k)*(w[j+2]-w[j+1]) + (1+k)*(w[j+1] - w[j]))
+
+            rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
+
+            flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
+
+        flux = mi.fillGhosts(flux)
+        return flux
+    
     def fillDamp(self,w):
         N = w.shape[0]
         damp = np.empty(N)
@@ -87,10 +139,14 @@ class MUSCL():
     def fillFlux0(self, w, f, phi):
         if self.form == 'KT':
             return self.fillFlux0_KT(w, f, phi)
+        if self.form == 'KTparabolic':
+            return self.fillFlux0_KT_parabolic(w, f, phi)
 
     def fillFlux1(self, w, f, phi):
         if self.form == 'KT':
             return self.fillFlux1_KT(w, f, phi)
+        if self.form == 'KTparabolic':
+            return self.fillFlux1_KT_parabolic(w, f, phi)
 
 
     def compute(self, tFinal):
@@ -116,7 +172,7 @@ class MUSCL():
             F1w = self.fillFlux1(u0w, self.flux, phiMinMod)
             Dw = self.fillDamp(u0w)
 
-            u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2]) + 0.1*self.dt/self.dx/self.dx*Dw[2:-2]
+            u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2]) # + 0.1*self.dt/self.dx/self.dx*Dw[2:-2]
 
             u1w = mi.fillGhosts(u1w,num_of_ghosts=2)
 

@@ -9,7 +9,6 @@ import numpy as np
 import misc as mi
 
 def phiSuperbee(r):
-        # return max(0.,min(1,r))
         return max(0., min(2.*r,1.), min(r,2.))
 
 def phiVanLeer(r):
@@ -138,33 +137,42 @@ class MUSCL():
         flux = mi.fillGhosts(flux)
         return flux
     
+    def fillFlux0_MUSCL_Laney(self, w, f, phi):
+        N = w.shape[0]
+        flux = np.empty(N)
+        a = np.empty(N)
+
+        for j in range(2, N-2): #building aj coefficients according to Laney
+            if w[j] != w[j+1]:
+                a[j]=(f(w[j])-f(w[j-1]))/(w[j]-w[j-1])
+            else:
+                a[j]=a[w[j]]
+
+        for j in range(2,N-2): #Now building flux
+            if (a[j]>=0) and (a[j]*self.nu <= 1):
+                flux[j] = f(w[j-1]) + .5*a[j-1]*(1 - self.nu*a[j-2]*(w[j-1]-w[j-2])/self.dx)/(1+ self.nu*(a[j-1]-a[j-2])) #backward space approximation for Sj
+            if (a[j]>=0) and (a[j]*self.nu <= 1):
+                flux[j] = f(w[j-1]) - .5*a[j-1]*(1 + self.nu*a[j]*(w[j]-w[j-1])/self.dx)/(1+ self.nu*(a[j]-a[j-1]))
+
+        flux = mi.fillGhosts(flux)
+        return flux
+    
     def fillFlux1_MUSCL_Laney(self, w, f, phi):
         N = w.shape[0]
         flux = np.empty(N)
+        a = np.empty(N)
 
-        for j in range(2, N-2):
-            if (w[j+1] - w[j]) == 0:
-                riL = np.inf
+        for j in range(2, N-2): #building aj coefficients according to Laney
+            if w[j] != w[j+1]:
+                a[j]=(f(w[j+1])-f(w[j]))/(w[j+1]-w[j])
             else:
-                riL = (w[j] - w[j-1])/(w[j+1] - w[j])
-            if (w[j+2] - w[j+1]) == 0:
-                riR = np.inf
-            else:
-                riR  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
+                a[j]=a[w[j]]
 
-            uL = w[j] + 0.5 * phi(riL) * (w[j+1] - w[j])
-            uR = w[j+1] - 0.5 * phi(riR) * (w[j+2] - w[j+1])
-
-            fL = f(w[j]) + 0.5 * self.a(w[j]) * (uL - w[j])
-            fR = f(w[j+1]) - 0.5 * self.a(w[j+1]) * (w[j+1] - uR)
-
-            aL = self.jac(uL)
-            aR = self.jac(uR)
-
-            a = max(abs(aL), abs(aR))
-
-            flux[j] = 0.5 * (fL + fR) - 0.5 * a * (uR - uL)
-            flux[j] += 0.5 * self.nu * (uR - uL)
+        for j in range(2,N-2): #Now building flux
+            if (a[j]>=0) and (a[j]*self.nu <= 1):
+                flux[j] = f(w[j]) + .5*a[j]*(1 - self.nu*a[j-1]*(w[j]-w[j-1])/self.dx)/(1+ self.nu*(a[j]-a[j-1])) #backward space approximation for Sj
+            if (a[j]>=0) and (a[j]*self.nu <= 1):
+                flux[j] = f(w[j]) - .5*a[j]*(1 + self.nu*a[j+1]*(w[j+1]-w[j])/self.dx)/(1+ self.nu*(a[j+1]-a[j]))
 
         flux = mi.fillGhosts(flux)
         return flux
@@ -182,12 +190,16 @@ class MUSCL():
             return self.fillFlux0_KT(w, f, phi)
         if self.form == 'KTparabolic':
             return self.fillFlux0_KT_parabolic(w, f, phi)
+        if self.form == 'Laney':
+            return self.fillFlux0_MUSCL_Laney(w, f, phi)
 
     def fillFlux1(self, w, f, phi):
         if self.form == 'KT':
             return self.fillFlux1_KT(w, f, phi)
         if self.form == 'KTparabolic':
             return self.fillFlux1_KT_parabolic(w, f, phi)
+        if self.form == 'Laney':
+            return self.fillFlux1_MUSCL_Laney(w, f, phi)
 
 
     def compute(self, tFinal):
@@ -209,8 +221,8 @@ class MUSCL():
         Dw = np.empty((u0w.shape[0]))
 
         for _ in range(Nt):
-            F0w = self.fillFlux0(u0w, self.flux, phiSuperbee)
-            F1w = self.fillFlux1(u0w, self.flux, phiSuperbee)
+            F0w = self.fillFlux0(u0w, self.flux, phiMinMod)
+            F1w = self.fillFlux1(u0w, self.flux, phiMinMod)
             Dw = self.fillDamp(u0w)
 
             k1 = -self.nu * (F1w[2:-2] - F0w[2:-2]) #RK4

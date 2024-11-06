@@ -153,18 +153,18 @@ class MUSCL():
         Sj = np.empty(N)
 
         for j in range(2, N-2): #building aj coefficients according to Laney
-            if w[j] != w[j+1]:
-                a[j]=(f(w[j+1])-f(w[j]))/(w[j+1]-w[j])
+            if w[j] != w[j-1]:
+                a[j]=(f(w[j])-f(w[j-1]))/(w[j]-w[j-1])
             else:
                 a[j]=f(w[j])
 
-            Sj[j]=minmod(2 * (w[j] - w[j-1]) / self.dx, 2 * (w[j+1] - w[j]) / self.dx)
+            Sj[j]=minmod(2 * (w[j-1] - w[j-2]) / self.dx, 2 * (w[j] - w[j-1]) / self.dx)
 
         for j in range(2,N-2): #Now building flux
             if (a[j-1]>=0) and (a[j-1]*self.nu <= 1):
-                flux[j] = f(w[j-1]) + .5*a[j-1]*(1 - self.nu*a[j-2]*Sj[j-1]*self.dx)/(1+ self.nu*(a[j-1]-a[j-2])) #backward space approximation for Sj
+                flux[j] = f(w[j-1]) + .5*a[j]*(1 - self.nu*a[j-1]*Sj[j]*self.dx)/(1+ self.nu*(a[j]-a[j-1])) #backward space approximation for Sj
             if (a[j-1]<0) and (a[j-1]*self.nu > -1):
-                flux[j] = f(w[j]) - .5*a[j-1]*(1 + self.nu*a[j]*Sj[j]*self.dx)/(1+ self.nu*(a[j]-a[j-1]))
+                flux[j] = f(w[j]) - .5*a[j]*(1 + self.nu*a[j+1]*Sj[j+1]*self.dx)/(1+ self.nu*(a[j+1]-a[j]))
 
         flux = mi.fillGhosts(flux, num_of_ghosts=2)
         return flux

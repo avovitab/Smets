@@ -159,7 +159,7 @@ class MUSCL():
                 a[j]=f(w[j])
 
             Sj[j]=minmod(2 * (w[j-1] - w[j-2]) / self.dx, 2 * (w[j] - w[j-1]) / self.dx)
-
+        print(Sj)
         for j in range(2,N-2): #Now building flux
             if (a[j-1]>=0) and (a[j-1]*self.nu <= 1):
                 flux[j] = f(w[j-1]) + .5*a[j]*(1 - self.nu*a[j-1]*Sj[j]*self.dx)/(1+ self.nu*(a[j]-a[j-1])) #backward space approximation for Sj
@@ -186,7 +186,7 @@ class MUSCL():
         for j in range(2,N-2): #Now building flux
             if (a[j]>=0) and (a[j]*self.nu <= 1):
                 flux[j] = f(w[j]) + .5*a[j]*(1 - self.nu*a[j-1]*Sj[j]*self.dx)/(1+ self.nu*(a[j]-a[j-1])) #backward space approximation for Sj
-            if (a[j]<0) and (a[j]*self.nu > -1):
+            if (a[j]<0) and (a[j]*self.nu >= -1):
                 flux[j] = f(w[j+1]) - .5*a[j]*(1 + self.nu*a[j+1]*Sj[j+1]*self.dx)/(1+ self.nu*(a[j+1]-a[j]))
 
         flux = mi.fillGhosts(flux, num_of_ghosts=2)

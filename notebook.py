@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 ## Diagnostics de performance
 import numpy as np
 def diffAbs(uFinal,uRef):
-	return 1/uFinal.shape[0]*np.sum((uFinal - uRef)**2)**.5
+	return (1/uFinal.shape[0]**.5)*np.sum((uFinal - uRef)**2)**.5
 
 
 def conservation(uFinal,uRef,scheme):
@@ -34,7 +34,7 @@ def conservation(uFinal,uRef,scheme):
 # +
 test = tst.Test1()
 scheme = ng.MUSCL(test)
-scheme.form = "KT"
+scheme.form = "KTparabolic"
 scheme.compute(scheme.tFinal)
 plt.plot(scheme.x, scheme.uFinal)
 plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")
@@ -48,7 +48,7 @@ print("Erreur de conservation : ", conservation(scheme.uF,scheme.u0(scheme.x),sc
 # +
 test = tst.Test2()
 scheme = ng.MUSCL(test)
-scheme.form = "KT"
+scheme.form = "KTparabolic"
 scheme.compute(scheme.tFinal)
 plt.plot(scheme.x, scheme.uFinal)
 plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")
@@ -62,7 +62,7 @@ print("Erreur de conservation : ", conservation(scheme.uF,scheme.u0(scheme.x),sc
 # +
 test = tst.Test3()
 scheme = ng.MUSCL(test)
-scheme.form = "KT"
+scheme.form = "KTparabolic"
 scheme.compute(scheme.tFinal)
 plt.plot(scheme.x, scheme.uFinal)
 plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")
@@ -85,12 +85,40 @@ print("Erreur RMS: ", diffAbs(scheme.uFinal,scheme.uF))
 print("Erreur de conservation : ", conservation(scheme.uF,scheme.u0(scheme.x),scheme))
 # -
 
+# test 4 - interpolation du 2nd ordre
+
+# +
+test = tst.Test4()
+scheme = ng.MUSCL(test)
+scheme.form = "KTparabolic"
+scheme.compute(scheme.tFinal)
+plt.plot(scheme.x, scheme.uFinal)
+plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")
+
+print("Erreur RMS: ", diffAbs(scheme.uFinal,scheme.uF))
+print("Erreur de conservation : ", conservation(scheme.uF,scheme.u0(scheme.x),scheme))
+# -
+
 # test 5
 
 # +
 test = tst.Test5()
 scheme = ng.MUSCL(test)
 scheme.form = "KT"
+scheme.compute(scheme.tFinal)
+plt.plot(scheme.x, scheme.uFinal)
+plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")
+
+print("Erreur RMS: ", diffAbs(scheme.uFinal,scheme.uF))
+print("Erreur de conservation : ", conservation(scheme.uF,scheme.u0(scheme.x),scheme))
+# -
+
+# test 5 - interpolation du 2nd ordre
+
+# +
+test = tst.Test5()
+scheme = ng.MUSCL(test)
+scheme.form = "KTparabolic"
 scheme.compute(scheme.tFinal)
 plt.plot(scheme.x, scheme.uFinal)
 plt.plot(scheme.x, scheme.uF, marker = "o", markersize=5, linestyle = "None")

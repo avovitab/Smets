@@ -1,0 +1,8 @@
+Convertir les notebooks
+
+D'abord installer jupytext avec pip install jupytext
+
+Convertir avec
+
+jupytext [fichier] --to py
+jupytext [fichier] --to ipynb

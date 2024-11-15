@@ -15,7 +15,7 @@ def phiVanLeer(r):
     R = abs(r)
     return (r + R)/(1+R)
 
-def phiMinMod(r):
+def phiSuperbee(r):
     return max(0,min(1.,r))
 
 def phivanAlbada(r):
@@ -57,17 +57,7 @@ class MUSCL():
             uL = w[j-1] + .5 * phi(riL) * (w[j] - w[j-1])
             uR = w[j] - .5 * phi(riR) * (w[j+1] - w[j])
 
-            """ if w[j] != uR:
-                dFuR = (f(uR) - f(w[j]))/(uR - w[j])
-            else:
-                dFuR = self.a(uR)
-            if uL!= w[j]:
-                dFuL = (f(uL) - f(w[j]))/(uL - w[j])
-            else:
-                dFuL = self.a(uL) """
-
             rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
-            #rho = max(abs(dFuL),abs(dFuR))
             flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
 
         flux = mi.fillGhosts(flux)
@@ -89,18 +79,8 @@ class MUSCL():
 
             uL = w[j] + .5 * phi(riL) * (w[j+1] - w[j])
             uR = w[j+1] - .5 * phi(riR) * (w[j+2] - w[j+1])
-
-            """ if w[j] != uR:
-                dFuR = (f(uR) - f(w[j]))/(uR - w[j])
-            else:
-                dFuR = self.a(uR)
-            if uL != w[j]:
-                dFuL = (f(uL) - f(w[j]))/(uL - w[j])
-            else:
-                dFuL = self.a(uL) """
             
             rho = max(abs(self.jac(uR)),abs(self.jac(uL)))
-            #rho = max(abs(dFuL),abs(dFuR))
             
             flux[j] = .5 * (f(uL) + f(uR) - rho * (uR - uL))
 
@@ -254,45 +234,40 @@ class MUSCL():
         Dw = np.empty((u0w.shape[0]))
 
         for _ in range(Nt):
-            F0w = self.fillFlux0(u0w, self.flux, phiMinMod)
-            F1w = self.fillFlux1(u0w, self.flux, phiMinMod)
-            # Dw = self.fillDamp(u0w)
-
+            F0w = self.fillFlux0(u0w, self.flux, phiSuperbee)
+            F1w = self.fillFlux1(u0w, self.flux, phiSuperbee)
+            
+            ## RK4 ##
+            """ 
             k1 = -self.nu * (F1w[2:-2] - F0w[2:-2]) #RK4
             u1 = u0w[2:-2] + 0.5 * k1
             u1_w = mi.addGhosts(u1, num_of_ghosts=2)
             u1_w = mi.fillGhosts(u1_w, num_of_ghosts=2)
             
-            F0w_1 = self.fillFlux0(u1_w, self.flux, phiMinMod)
-            F1w_1 = self.fillFlux1(u1_w, self.flux, phiMinMod)
+            F0w_1 = self.fillFlux0(u1_w, self.flux, phiSuperbee)
+            F1w_1 = self.fillFlux1(u1_w, self.flux, phiSuperbee)
             k2 = -self.nu * (F1w_1[2:-2] - F0w_1[2:-2])
             u2 = u0w[2:-2] + 0.5 * k2
             u2_w = mi.addGhosts(u2, num_of_ghosts=2)
             u2_w = mi.fillGhosts(u2_w, num_of_ghosts=2)
             
-            F0w_2 = self.fillFlux0(u2_w, self.flux, phiMinMod)
-            F1w_2 = self.fillFlux1(u2_w, self.flux, phiMinMod)
+            F0w_2 = self.fillFlux0(u2_w, self.flux, phiSuperbee)
+            F1w_2 = self.fillFlux1(u2_w, self.flux, phiSuperbee)
             k3 = -self.nu * (F1w_2[2:-2] - F0w_2[2:-2])
             u3 = u0w[2:-2] + k3
             u3_w = mi.addGhosts(u3, num_of_ghosts=2)
             u3_w = mi.fillGhosts(u3_w, num_of_ghosts=2)
             
-            F0w_3 = self.fillFlux0(u3_w, self.flux, phiMinMod)
-            F1w_3 = self.fillFlux1(u3_w, self.flux, phiMinMod)
+            F0w_3 = self.fillFlux0(u3_w, self.flux, phiSuperbee)
+            F1w_3 = self.fillFlux1(u3_w, self.flux, phiSuperbee)
             k4 = -self.nu * (F1w_3[2:-2] - F0w_3[2:-2])
             
-            u1w[2:-2] = u0w[2:-2] + (k1 + 2*k2 + 2*k3 + k4) / 6
+            u1w[2:-2] = u0w[2:-2] + (k1 + 2*k2 + 2*k3 + k4) / 6 """
+            ##
 
-            # u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2]) # + 0.1*self.dt/self.dx/self.dx*Dw[2:-2]
-
-            # u_half = u0w[2:-2] - 0.5 * self.nu * (F1w[2:-2] - F0w[2:-2]) #RK2
-            # u_half_w = mi.addGhosts(u_half, num_of_ghosts=2)
-            # u_half_w = mi.fillGhosts(u_half_w, num_of_ghosts=2)
-            
-            # F0w_half = self.fillFlux0(u_half_w, self.flux, phiMinMod)
-            # F1w_half = self.fillFlux1(u_half_w, self.flux, phiMinMod)
-            
-            #u1w[2:-2] = u0w[2:-2] - self.nu * (F1w_half[2:-2] - F0w_half[2:-2])
+            ## Euler 
+            u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2])
+            ##
 
             u1w = mi.fillGhosts(u1w,num_of_ghosts=2)
 

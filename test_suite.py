@@ -47,7 +47,7 @@ class TestHCL():
                  tFinal = 0,\
                  domain = (-1.0,+1.0),\
                  nx = None,\
-                 nu = 0.8,\
+                 nu = 0.1,\
                  flux = None,\
                  u_star = None,\
                  u0 = None,\

@@ -47,7 +47,7 @@ class TestHCL():
                  tFinal = 0,\
                  domain = (-1.0,+1.0),\
                  nx = None,\
-                 nu = 0.1,\
+                 nu = 0.8,\
                  flux = None,\
                  u_star = None,\
                  u0 = None,\
@@ -117,7 +117,7 @@ class Test3(TestHCL):
 
     def __init__(self):
         super().__init__(tag = 3,\
-                         tFinal = (4,40)[1],\
+                         tFinal = (4,40)[0],\
                          nx = 600,\
                          flux = lambda u:u,\
                          u_star = None,\

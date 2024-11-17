@@ -235,7 +235,7 @@ class MUSCL():
             F1w = self.fillFlux1(u0w, self.flux, phiSuperbee)
             
             ## RK4 ##
-            """ 
+            
             k1 = -self.nu * (F1w[2:-2] - F0w[2:-2]) #RK4
             u1 = u0w[2:-2] + 0.5 * k1
             u1_w = mi.addGhosts(u1, num_of_ghosts=2)
@@ -259,11 +259,11 @@ class MUSCL():
             F1w_3 = self.fillFlux1(u3_w, self.flux, phiSuperbee)
             k4 = -self.nu * (F1w_3[2:-2] - F0w_3[2:-2])
             
-            u1w[2:-2] = u0w[2:-2] + (k1 + 2*k2 + 2*k3 + k4) / 6 """
+            u1w[2:-2] = u0w[2:-2] + (k1 + 2*k2 + 2*k3 + k4) / 6
             ##
 
             ## Euler 
-            u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2])
+            #u1w[2:-2] = u0w[2:-2] - self.nu * (F1w[2:-2] - F0w[2:-2])
             ##
 
             u1w = mi.fillGhosts(u1w,num_of_ghosts=2)

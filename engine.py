@@ -8,9 +8,6 @@
 import numpy as np
 import misc as mi
 
-def phiSuperbee(r):
-        return max(0., min(2.*r,1.), min(r,2.))
-
 def phiVanLeer(r):
     R = abs(r)
     return (r + R)/(1+R)
@@ -19,7 +16,7 @@ def phiSuperbee(r):
     return max(0,min(1.,r))
 
 def phivanAlbada(r):
-    return max((r+r**2)/(1+r**2))
+    return max(0,(r+r**2)/(1+r**2))
 
 def minmod(m1,m2):
     return 0.5*(np.sign(m1)+np.sign(m2))*np.min(abs(m1),abs(m2))
@@ -46,11 +43,11 @@ class MUSCL():
 
         for j in range(2, N-2):
             if (w[j] - w[j-1]) == 0:
-                riL = np.inf
+                riL = 1000*np.sign(w[j] - w[j-1])
             else:
                 riL = (w[j-1] - w[j-2])/(w[j] - w[j-1])
             if (w[j+1] - w[j]) == 0:
-                riR = np.inf
+                riR = 1000*np.sign(w[j+1] - w[j])
             else:
                 riR = (w[j] - w[j-1])/(w[j+1] - w[j])
 
@@ -69,11 +66,11 @@ class MUSCL():
 
         for j in range(2, N-2):
             if (w[j+1] - w[j]) == 0:
-                riL = np.inf
+                riL = 1000*np.sign(w[j+1] - w[j])
             else:
                 riL = (w[j] - w[j-1])/(w[j+1] - w[j])
             if (w[j+2] - w[j+1]) == 0:
-                riR = np.inf
+                riR = 1000*np.sign(w[j+2] - w[j+1])
             else:
                 riR  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
 
@@ -93,11 +90,11 @@ class MUSCL():
 
         for j in range(2, N-2):
             if (w[j] - w[j-1]) == 0:
-                riL = np.inf
+                riL = 1000*np.sign(w[j] - w[j-1])
             else:
                 riL = (w[j-1] - w[j-2])/(w[j] - w[j-1])
             if (w[j+1] - w[j]) == 0:
-                riR = np.inf
+                riR = 1000*np.sign(w[j+1] - w[j])
             else:
                 riR = (w[j] - w[j-1])/(w[j+1] - w[j])
 
@@ -119,11 +116,11 @@ class MUSCL():
 
         for j in range(2, N-2):
             if (w[j+1] - w[j]) == 0:
-                riL = np.inf
+                riL = 1000*np.sign(w[j+1] - w[j])
             else:
                 riL = (w[j] - w[j-1])/(w[j+1] - w[j])
             if (w[j+2] - w[j+1]) == 0:
-                riR = np.inf
+                riR = 1000*np.sign(w[j+2] - w[j+1])
             else:
                 riR  = (w[j+1] - w[j])/(w[j+2] - w[j+1])
 
